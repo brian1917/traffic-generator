@@ -2,7 +2,7 @@ name: traffic-generator-release
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - version
       - "**/traffic-generator-release.yml"
