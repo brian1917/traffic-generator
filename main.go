@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -46,7 +45,7 @@ func main() {
 			showHelp()
 			LogError("send-traffic requires another argument for the traffic import file.")
 		}
-		log.Printf("hostname discovered as %s\r\n", hostname())
+		LogInfof(true, "hostname discovered as %s\r\n", hostname())
 		sendTraffic(os.Args[2])
 
 		// Process continuous command
@@ -101,14 +100,14 @@ func openAndContinuousTraffic(csvFile string) {
 
 	ips, err := getLocalIPs()
 	if err != nil {
-		log.Fatal(err)
+		LogErrorf("error getting local ips - %s", err)
 	}
 
 	var ct clientTraffic
 	// Open CSV File and create the reader and get data.
 	data, header, err := LoadCSV(csvFile)
 	if err != nil {
-		log.Fatal(err)
+		LogErrorf("error loading csv file - %s", err)
 	}
 
 	uniqueConnections := make(map[string]bool)
@@ -144,11 +143,11 @@ func openAndContinuousTraffic(csvFile string) {
 
 	//Tell user if the ips in the CSV dont match with the local machine
 	if len(uniqueConnections) == 0 {
-		log.Println("No listeners or connections found for this host")
+		LogInfof(true, "no listeners or connections found for this host")
 		os.Exit(0)
 	} else {
-		log.Printf("Listeners: TCP: %v, UDP: %v\n", ct.listenerTCPPorts, ct.listenerUDPPorts)
-		log.Printf("Connections: TCP: %v, UDP: %v\n", ct.dstTCPconnection, ct.dstUDPconnection)
+		LogInfof(true, "listeners: tcp: %v, udp: %v\n", ct.listenerTCPPorts, ct.listenerUDPPorts)
+		LogInfof(true, "connections: tcp: %v, udp: %v\n", ct.dstTCPconnection, ct.dstUDPconnection)
 	}
 
 	// Create listeners and connections

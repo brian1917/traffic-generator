@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"time"
 )
@@ -16,7 +15,7 @@ func startUDPClient(addr string) {
 	for {
 		conn, err = net.Dial("udp", addr)
 		if err != nil {
-			log.Printf("Error connecting to UDP server %v", err)
+			LogWarningf(true, "could not connect to udp server %v", err)
 			time.Sleep((10 * time.Second))
 			continue
 		}
@@ -34,13 +33,13 @@ func startUDPClient(addr string) {
 		buffer := make([]byte, 1024)
 		n, err := conn.Read(buffer)
 		if err != nil {
-			log.Printf("Error reading from UDP server: %v", err)
+			LogWarningf(true, "could not read from UDP server: %v", err)
 		}
 		responseTxt := string(buffer[:n])
 		if len(string(buffer[:n])) == 0 {
 			responseTxt = "No response"
 		}
-		log.Printf("UDP Connector response from %s: %s\n", addr, responseTxt)
+		LogInfof(true, "udp connector response from %s: %s\n", addr, responseTxt)
 		time.Sleep((randomInterval(MINTIME, MAXTIME)))
 	}
 }
@@ -51,17 +50,17 @@ func startUDPListener(port string) {
 	addr := fmt.Sprintf(":%s", port)
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
-		log.Fatalf("Error starting UDP listener on port %s: %v", port, err)
+		LogErrorf("starting udp listener on port %s: %v", port, err)
 	}
 	defer conn.Close()
 
-	log.Printf("UDP listener started on port %s", port)
+	LogInfof(true, "udp listener started on port %s", port)
 
 	buffer := make([]byte, 1024)
 	for {
 		n, clientAddr, err := conn.ReadFrom(buffer)
 		if err != nil {
-			log.Printf("Error reading UDP packet: %v", err)
+			LogWarningf(true, "could not read from udp packet: %v", err)
 			continue
 		}
 		go handleUDPPacket(conn, clientAddr, buffer[:n])
@@ -75,5 +74,5 @@ func handleUDPPacket(conn net.PacketConn, clientAddr net.Addr, data []byte) {
 	ip, _, _ := net.SplitHostPort(clientAddr.String())
 	response := fmt.Sprintf("Received UDP request from %s at %s\n", ip, currentTime)
 	conn.WriteTo([]byte(response), clientAddr)
-	log.Printf("UDP Listener responded with: %s to ip: %s", string(data), ip)
+	LogInfof(true, "udp listener responded with: %s to ip: %s", string(data), ip)
 }

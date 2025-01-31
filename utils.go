@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -44,7 +43,7 @@ func LoadCSV(csvFile string) ([][]string, map[string]int, error) {
 	// Open CSV File and create the reader
 	file, err := os.Open(csvFile)
 	if err != nil {
-		log.Fatal(err)
+		LogErrorf("error opening csv file - %s", err)
 	}
 	defer file.Close()
 	reader := csv.NewReader(ClearBOM(bufio.NewReader(file)))
@@ -64,7 +63,7 @@ func LoadCSV(csvFile string) ([][]string, map[string]int, error) {
 			break
 		}
 		if err != nil {
-			log.Fatal(err)
+			LogErrorf("error reading csv file - %s", err)
 		}
 
 		// build header map for later use.
