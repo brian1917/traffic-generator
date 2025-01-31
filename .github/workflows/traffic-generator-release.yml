@@ -1,0 +1,108 @@
+name: traffic-generator-release
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - version
+      - "**/traffic-generator-release.yml"
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.19
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.19
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+
+      - name: Get dependencies
+        run: go mod download
+
+      - name: Get traffic-generator version
+        id: get_version
+        run: |
+          echo "version=$(cat version)" >> $GITHUB_OUTPUT
+          echo "commit=$(git rev-list -1 HEAD)" >> $GITHUB_OUTPUT
+
+      # - name: Make directories
+      #   run: |
+      #     mkdir windows-v${{ steps.get_version.outputs.version }} mac-v${{ steps.get_version.outputs.version }} linux-v${{ steps.get_version.outputs.version }}
+
+      - name: Build Windows executable
+        run: GOOS=windows go build -ldflags "-X github.com/brian1917/workloader/utils.Version=$(cat version) -X github.com/brian1917/workloader/utils.Commit=$(git rev-list -1 HEAD)" -o ./windows-v${{ steps.get_version.outputs.version }}/workloader.exe
+
+      - name: Build Mac executable
+        run: GOOS=darwin go build -ldflags "-X github.com/brian1917/workloader/utils.Version=$(cat version) -X github.com/brian1917/workloader/utils.Commit=$(git rev-list -1 HEAD)" -o ./mac-v${{ steps.get_version.outputs.version }}/workloader
+
+      - name: Build Linux amd64 executable
+        run: GOOS=linux GOARCH=amd64 go build -ldflags "-X github.com/brian1917/workloader/utils.Version=$(cat version) -X github.com/brian1917/workloader/utils.Commit=$(git rev-list -1 HEAD)" -o ./linux_amd64-v${{ steps.get_version.outputs.version }}/workloader
+
+      - name: Build Linux ARM executable
+        run: GOOS=linux GOARCH=arm go build -ldflags "-X github.com/brian1917/workloader/utils.Version=$(cat version) -X github.com/brian1917/workloader/utils.Commit=$(git rev-list -1 HEAD)" -o ./linux_arm-v${{ steps.get_version.outputs.version }}/workloader
+
+      - name: Create release zip packages
+        run: |
+          zip -r windows-v${{ steps.get_version.outputs.version }}.zip windows-v${{ steps.get_version.outputs.version }}/
+          zip -r mac-v${{ steps.get_version.outputs.version }}.zip mac-v${{ steps.get_version.outputs.version }}/
+          zip -r linux_amd64-v${{ steps.get_version.outputs.version }}.zip linux_amd64-v${{ steps.get_version.outputs.version }}/
+          zip -r linux_arm-v${{ steps.get_version.outputs.version }}.zip linux_arm-v${{ steps.get_version.outputs.version }}/
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Windows package
+        id: upload-windows-package
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./windows-v${{ steps.get_version.outputs.version }}.zip
+          asset_name: windows-v${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: application/zip
+
+      - name: Upload Mac package
+        id: upload-mac-package
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./mac-v${{ steps.get_version.outputs.version }}.zip
+          asset_name: mac-v${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: application/zip
+
+      - name: Upload Linux amd64 package
+        id: upload-linux_amd64_-package
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linux_amd64-v${{ steps.get_version.outputs.version }}.zip
+          asset_name: linux_amd64-v${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: application/zip
+
+      - name: Upload Linux ARM package
+        id: upload-linux_arm-package
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./linux_arm-v${{ steps.get_version.outputs.version }}.zip
+          asset_name: linux_arm-v${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: application/zip
