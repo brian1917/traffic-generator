@@ -21,6 +21,9 @@ type clientTraffic struct {
 const MINTIME = 60
 const MAXTIME = 600
 
+var Version string
+var LastCommit string
+
 func main() {
 
 	// Make sure we have a command
@@ -57,8 +60,12 @@ func main() {
 		LogInfof(false, "hostname discovered as %s\r\n", hostname())
 		openAndContinuousTraffic(os.Args[2])
 
-		// Everything else is invalid
+		// Version command
+	} else if os.Args[1] == "version" {
+		fmt.Printf("Version: %s\r\n", Version)
+		fmt.Printf("Last Commit: %s\r\n", LastCommit)
 	} else {
+		// Everything else is invalid
 		showHelp()
 	}
 }

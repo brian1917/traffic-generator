@@ -29,28 +29,24 @@ jobs:
           echo "version=$(cat version)" >> $GITHUB_OUTPUT
           echo "commit=$(git rev-list -1 HEAD)" >> $GITHUB_OUTPUT
 
-      # - name: Make directories
-      #   run: |
-      #     mkdir windows-v${{ steps.get_version.outputs.version }} mac-v${{ steps.get_version.outputs.version }} linux-v${{ steps.get_version.outputs.version }}
-
       - name: Build Windows executable
-        run: GOOS=windows go build -ldflags "-X github.com/brian1917/workloader/utils.Version=$(cat version) -X github.com/brian1917/workloader/utils.Commit=$(git rev-list -1 HEAD)" -o ./windows-v${{ steps.get_version.outputs.version }}/workloader.exe
+        run: GOOS=windows go build  -ldflags "-X main.Version=$(cat version) -X main.LastCommit=$(git rev-list -1 HEAD)" -o ./windows/traffic-generator.exe
 
       - name: Build Mac executable
-        run: GOOS=darwin go build -ldflags "-X github.com/brian1917/workloader/utils.Version=$(cat version) -X github.com/brian1917/workloader/utils.Commit=$(git rev-list -1 HEAD)" -o ./mac-v${{ steps.get_version.outputs.version }}/workloader
+        run: GOOS=darwin go build -ldflags "-X main.Version=$(cat version) -X main.LastCommit=$(git rev-list -1 HEAD)" -o ./mac/traffic-generator
 
       - name: Build Linux amd64 executable
-        run: GOOS=linux GOARCH=amd64 go build -ldflags "-X github.com/brian1917/workloader/utils.Version=$(cat version) -X github.com/brian1917/workloader/utils.Commit=$(git rev-list -1 HEAD)" -o ./linux_amd64-v${{ steps.get_version.outputs.version }}/workloader
+        run: GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(cat version) -X main.LastCommit=$(git rev-list -1 HEAD)" -o ./linux_amd64/traffic-generator
 
       - name: Build Linux ARM executable
-        run: GOOS=linux GOARCH=arm go build -ldflags "-X github.com/brian1917/workloader/utils.Version=$(cat version) -X github.com/brian1917/workloader/utils.Commit=$(git rev-list -1 HEAD)" -o ./linux_arm-v${{ steps.get_version.outputs.version }}/workloader
+        run: GOOS=linux GOARCH=arm go build -ldflags "-X main.Version=$(cat version) -X main.LastCommit=$(git rev-list -1 HEAD)" -o ./linux_arm/traffic-generator
 
       - name: Create release zip packages
         run: |
-          zip -r windows-v${{ steps.get_version.outputs.version }}.zip windows-v${{ steps.get_version.outputs.version }}/
-          zip -r mac-v${{ steps.get_version.outputs.version }}.zip mac-v${{ steps.get_version.outputs.version }}/
-          zip -r linux_amd64-v${{ steps.get_version.outputs.version }}.zip linux_amd64-v${{ steps.get_version.outputs.version }}/
-          zip -r linux_arm-v${{ steps.get_version.outputs.version }}.zip linux_arm-v${{ steps.get_version.outputs.version }}/
+          zip -r windows.zip windows/
+          zip -r mac.zip mac/
+          zip -r linux_amd64.zip linux_amd64/
+          zip -r linux_arm.zip linux_arm/
 
       - name: Create GitHub Release
         id: create_release
@@ -70,8 +66,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./windows-v${{ steps.get_version.outputs.version }}.zip
-          asset_name: windows-v${{ steps.get_version.outputs.version }}.zip
+          asset_path: ./windows.zip
+          asset_name: windows.zip
           asset_content_type: application/zip
 
       - name: Upload Mac package
@@ -81,8 +77,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./mac-v${{ steps.get_version.outputs.version }}.zip
-          asset_name: mac-v${{ steps.get_version.outputs.version }}.zip
+          asset_path: ./mac.zip
+          asset_name: mac.zip
           asset_content_type: application/zip
 
       - name: Upload Linux amd64 package
@@ -92,8 +88,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linux_amd64-v${{ steps.get_version.outputs.version }}.zip
-          asset_name: linux_amd64-v${{ steps.get_version.outputs.version }}.zip
+          asset_path: ./linux_amd64.zip
+          asset_name: linux_amd64.zip
           asset_content_type: application/zip
 
       - name: Upload Linux ARM package
@@ -103,6 +99,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./linux_arm-v${{ steps.get_version.outputs.version }}.zip
-          asset_name: linux_arm-v${{ steps.get_version.outputs.version }}.zip
+          asset_path: ./linux_arm.zip
+          asset_name: linux_arm.zip
           asset_content_type: application/zip
