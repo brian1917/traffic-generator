@@ -115,7 +115,7 @@ func openAndContinuousTraffic(csvFile string) {
 	// Open CSV File and create the reader and get data.
 	data, header, err := LoadCSV(csvFile)
 	if err != nil {
-		LogErrorf("error loading csv file - %s", err)
+		return
 	}
 	for _, row := range data {
 		dst := row[header["dst"]]

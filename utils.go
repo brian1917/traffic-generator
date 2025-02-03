@@ -62,6 +62,7 @@ func LoadCSV(csvFile string) ([][]string, map[string]int, error) {
 	file, err := os.Open(csvFile)
 	if err != nil {
 		LogErrorf("error opening csv file - %s", err)
+		return nil, nil, err
 	}
 	defer file.Close()
 	reader := csv.NewReader(ClearBOM(bufio.NewReader(file)))
@@ -82,6 +83,7 @@ func LoadCSV(csvFile string) ([][]string, map[string]int, error) {
 		}
 		if err != nil {
 			LogErrorf("error reading csv file - %s", err)
+			return nil, nil, err
 		}
 
 		// build header map for later use.

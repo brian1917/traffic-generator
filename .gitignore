@@ -1,3 +1,8 @@
+
 *.DS_Store
 *.log
 traffic-generator
+__debug*
+launch*
+.gitignore
+
