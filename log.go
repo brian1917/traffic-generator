@@ -29,7 +29,7 @@ func SetUpLogging() {
 // LogError writes the error the workloader.log and always prints an error to stdout.
 func LogError(msg string) {
 	Logger.SetPrefix(time.Now().Format("2006-01-02 15:04:05 "))
-	fmt.Printf("%s [ERROR] - %s see log file for potentially more information.\r\n", time.Now().Format("2006-01-02 15:04:05 "), msg)
+	fmt.Printf("%s [ERROR] - %s. see log file for potentially more information.\r\n", time.Now().Format("2006-01-02 15:04:05 "), msg)
 	Logger.Printf("[ERROR] - %s\r\n", msg)
 }
 

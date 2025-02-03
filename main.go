@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -26,15 +27,18 @@ var LastCommit string
 
 func main() {
 
+	// Setup logging
+	SetUpLogging()
+
 	// Make sure we have a command
 	if len(os.Args) < 2 {
 		showHelp()
 
-		// Process open-listener command
-	} else if os.Args[1] == "open-listener" {
+		// Process open-http-listener command
+	} else if os.Args[1] == "open-http-listener" {
 		if len(os.Args) != 3 {
 			showHelp()
-			LogError("open-listener requires another argument for port (e.g., traffic-generator open 3306)")
+			LogError("open-http-listener requires another argument for port (e.g., traffic-generator open 3306)")
 		}
 		port, err := strconv.Atoi(os.Args[2])
 		if err != nil {
@@ -85,7 +89,7 @@ func sendTraffic(csvFile string) {
 		}
 
 		// Skip if it's not for this current host
-		if line[headers["src"]] != hostname() {
+		if !hostMatch(line[headers["src"]]) {
 			continue
 		}
 
@@ -105,46 +109,45 @@ func sendTraffic(csvFile string) {
 // openAndContinuousTraffic - reads the CSV file and find ports that the local machine ip is the dst for and sends traffic where it is the src
 func openAndContinuousTraffic(csvFile string) {
 
-	ips, err := getLocalIPs()
-	if err != nil {
-		LogErrorf("error getting local ips - %s", err)
-	}
-
 	var ct clientTraffic
+	uniqueConnections := make(map[string]bool)
+
 	// Open CSV File and create the reader and get data.
 	data, header, err := LoadCSV(csvFile)
 	if err != nil {
 		LogErrorf("error loading csv file - %s", err)
 	}
+	for _, row := range data {
+		dst := row[header["dst"]]
+		port := row[header["port"]]
+		protocol := row[header["proto"]]
+		src := row[header["src"]]
 
-	uniqueConnections := make(map[string]bool)
-	// Iterate through the different ips on the local machine
-	for _, ip := range ips {
-		// Iterate through the
-		for _, row := range data {
-			dst := row[header["dst_ip"]]
-			port := row[header["port"]]
-			protocol := row[header["proto"]]
-			src := row[header["src_ip"]]
+		// convert proto
+		if strings.ToLower(protocol) == "tcp" {
+			protocol = "6"
+		}
+		if strings.ToLower(protocol) == "udp" {
+			protocol = "17"
+		}
 
-			//make a key to find duplicates using dst, port, and protocol
-			key := fmt.Sprintf("%s:%s:%s", dst, port, protocol)
+		//make a key to find duplicates using dst, port, and protocol
+		key := fmt.Sprintf("%s:%s:%s", dst, port, protocol)
 
-			if _, exists := uniqueConnections[key]; !exists {
-
-				if ip == dst && protocol == "6" {
-					ct.listenerTCPPorts = append(ct.listenerTCPPorts, port)
-				} else if ip == dst && protocol == "17" {
-					ct.listenerUDPPorts = append(ct.listenerUDPPorts, port)
-				} else if ip == src && protocol == "6" {
-					ct.dstTCPconnection = append(ct.dstTCPconnection, fmt.Sprintf("%s:%s", dst, port))
-				} else if ip == src && protocol == "17" {
-					ct.dstUDPconnection = append(ct.dstUDPconnection, fmt.Sprintf("%s:%s", dst, port))
-				} else {
-					continue
-				}
-				uniqueConnections[key] = true
+		// If connection already processed, skip it
+		if _, exists := uniqueConnections[key]; !exists {
+			if hostMatch(dst) && protocol == "6" {
+				ct.listenerTCPPorts = append(ct.listenerTCPPorts, port)
+			} else if hostMatch(dst) && protocol == "17" {
+				ct.listenerUDPPorts = append(ct.listenerUDPPorts, port)
+			} else if hostMatch(src) && protocol == "6" {
+				ct.dstTCPconnection = append(ct.dstTCPconnection, fmt.Sprintf("%s:%s", dst, port))
+			} else if hostMatch(src) && protocol == "17" {
+				ct.dstUDPconnection = append(ct.dstUDPconnection, fmt.Sprintf("%s:%s", dst, port))
+			} else {
+				continue
 			}
+			uniqueConnections[key] = true
 		}
 	}
 
@@ -153,8 +156,8 @@ func openAndContinuousTraffic(csvFile string) {
 		LogInfof(true, "no listeners or connections found for this host")
 		os.Exit(0)
 	} else {
-		LogInfof(true, "listeners: tcp: %v, udp: %v\n", ct.listenerTCPPorts, ct.listenerUDPPorts)
-		LogInfof(true, "connections: tcp: %v, udp: %v\n", ct.dstTCPconnection, ct.dstUDPconnection)
+		LogInfof(true, "listeners: tcp: %v, udp: %v", ct.listenerTCPPorts, ct.listenerUDPPorts)
+		LogInfof(true, "connections: tcp: %v, udp: %v", ct.dstTCPconnection, ct.dstUDPconnection)
 	}
 
 	// Create listeners and connections

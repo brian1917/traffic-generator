@@ -8,15 +8,16 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"strings"
 	"time"
 )
 
-// getLocalIPs - returns a list of local IP addresses for the machine running the program
-func getLocalIPs() ([]string, error) {
+// hostIPAddresses - returns a list of local IP addresses for the machine running the program
+func hostIPAddresses() ([]string, error) {
 	var ips []string
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("hostIPAddresses - %s", err)
 	}
 
 	for _, addr := range addrs {
@@ -28,6 +29,23 @@ func getLocalIPs() ([]string, error) {
 	}
 
 	return ips, nil
+}
+
+// hostMatch takes an IP or an fqdn and returns true if it matches the host excecuting.
+func hostMatch(host string) bool {
+	ips, err := hostIPAddresses()
+	if err != nil {
+		LogErrorf("matchhost - %s", err)
+	}
+
+	// Check each ip
+	for _, ip := range ips {
+		if ip == host {
+			return true
+		}
+	}
+	// Check hostname
+	return hostname() == host || strings.Split(hostname(), ".")[0] == host
 }
 
 // hostname - returns the hostname of the machine
@@ -67,18 +85,21 @@ func LoadCSV(csvFile string) ([][]string, map[string]int, error) {
 		}
 
 		// build header map for later use.
-		if lineNumber == 0 {
-			for i, column := range line {
-				if column == "src_ip" {
-					column = "src"
+		if lineNumber == 1 {
+			for i, header := range line {
+				if header == "src_ip" {
+					header = "src"
 				}
-				if column == "dst_ip" {
-					column = "dst"
+				if header == "dst_ip" {
+					header = "dst"
 				}
-				headerMap[column] = i
+				if header == "protocol" {
+					header = "proto"
+				}
+				headerMap[header] = i
 			}
 		} else if len(line) != len(headerMap) {
-			return nil, nil, fmt.Errorf("csv line %d - incorrect format", lineNumber)
+			return nil, nil, fmt.Errorf("csv line %d - incorrect format. line has %d entries and headers have %d", lineNumber, len(line), len(headerMap))
 		}
 
 		data = append(data, line)
