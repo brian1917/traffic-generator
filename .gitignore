@@ -5,4 +5,5 @@ traffic-generator
 __debug*
 launch*
 .gitignore
+traffic.csv
 

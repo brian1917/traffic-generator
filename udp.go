@@ -50,7 +50,8 @@ func startUDPListener(port string) {
 	addr := fmt.Sprintf(":%s", port)
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
-		LogErrorf("starting udp listener on port %s: %v", port, err)
+		LogWarningf(true, "starting udp listener on port %s: %v", port, err)
+		return
 	}
 	defer conn.Close()
 

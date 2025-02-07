@@ -11,7 +11,8 @@ func startTCPListener(port string) {
 	addr := fmt.Sprintf(":%s", port)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		LogErrorf("starting tcp listener on port %s: %v", port, err)
+		LogWarningf(true, "starting tcp listener on port %s: %v", port, err)
+		return
 	}
 	defer listener.Close()
 
